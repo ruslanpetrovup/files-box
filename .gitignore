@@ -1,0 +1,11 @@
+
+# Back-end
+server/uploads/*
+server/target
+server/.env
+
+# Front-end
+front/node_modules
+front/dist
+front/package-lock.json
+front/.angular
