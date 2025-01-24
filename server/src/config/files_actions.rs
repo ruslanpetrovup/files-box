@@ -1,43 +1,14 @@
 use axum::extract::multipart::Multipart;
-use serde::{Serialize, Deserialize};
 use serde_json::json;
 use sqlx::PgPool;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-pub struct FileAction {
-    pub multipart: Multipart,
-}
+use crate::models::files::{FileAction, FileResponse, FileData};
 
-#[derive(Serialize)]
-pub struct FileResponse {
-    pub data: Option<serde_json::Value>,
-    pub error_message: String,
-    pub is_error: bool,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct GetFiles {
-    pub file_ids: Vec<i32>,
-}
-
-#[derive(Serialize)]
-struct FileData {
-    id: i32,
-    file_name: String,
-    file_path: String,
-    file_size: i32,
-    file_content_type: String,
-    file_type: String,
-    user_id: i32,
-}
 
 impl FileAction {
-    pub fn new(multipart: Multipart) -> Self {
-        Self { multipart }
-    }
-
     pub async fn upload_file(
         pool: &PgPool,
         mut multipart: Multipart,

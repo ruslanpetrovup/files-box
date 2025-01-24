@@ -6,7 +6,7 @@ const SMTP_SERVER: &str = "smtp.example.com";
 const SMTP_USERNAME: &str = "your_username";
 const SMTP_PASSWORD: &str = "your_password";
 
-pub fn send_email(email: String, subject: String, message: String) {
+pub fn send_email(email: &String, subject: String, message: String) {
     // Create email
     let email = Message::builder()
         .from("verify-code@filemanager.com".parse().unwrap())

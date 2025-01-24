@@ -1,26 +1,28 @@
-use crate::config::{
-    api_types::{auth_header, Response},
-    app_state::AppState,
-    files_actions::{FileAction, GetFiles},
-};
+use crate::{config::api::auth_header, models::files::{FileResponse, FileUploadRequest}, repositories::user_repository::find_user_by_id};
 use axum::{
     extract::{multipart::Multipart, Query, State},
     http::HeaderMap,
     response::IntoResponse,
-    routing::post,
-    Json, Router,
+    Json
 };
 use serde_json::json;
-use sqlx::PgPool;
+use crate::models::api::Response;
+use crate::models::app::AppState;
+use crate::models::files::{FileAction, GetFiles};
 
-pub fn files_router(pool: &PgPool) -> Router {
-    Router::new()
-        .route("/upload", post(upload_file))
-        .route("/get", post(get_files))
-        .route("/delete", post(delete_file))
-        .with_state(AppState { pool: pool.clone() })
-}
 
+#[utoipa::path(
+    post,
+    path = "/files/upload",
+    request_body = FileUploadRequest,
+    responses(
+        (status = 200, description = "File successfully uploaded", body = FileResponse),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "User not found"),
+        (status = 500, description = "Server error")
+    ),
+    tag = "files"
+)]
 #[axum::debug_handler]
 pub async fn upload_file(
     State(pool): State<AppState>,
@@ -35,12 +37,7 @@ pub async fn upload_file(
             data: None,
         });
     }
-    let check_user = sqlx::query!(
-        "SELECT id FROM users WHERE id = $1",
-        verify.user_id.unwrap()
-    )
-    .fetch_optional(&pool.pool)
-    .await;
+    let check_user = find_user_by_id(&pool.pool, verify.user_id.unwrap()).await;
     if check_user.is_err() {
         return Json(Response {
             code: 401,
@@ -66,6 +63,19 @@ pub async fn upload_file(
     })
 }
 
+/// Получение списка файлов
+#[utoipa::path(
+    post,
+    path = "/files/get",
+    request_body = GetFiles,
+    responses(
+        (status = 200, description = "Файлы успешно найдены", body = FilesResponse),
+        (status = 401, description = "Неавторизованный доступ"),
+        (status = 404, description = "Пользователь не найден"),
+        (status = 500, description = "Ошибка сервера")
+    ),
+    tag = "files"
+)]
 #[axum::debug_handler]
 pub async fn get_files(
     State(pool): State<AppState>,
@@ -81,12 +91,7 @@ pub async fn get_files(
         });
     }
 
-    let check_user = sqlx::query!(
-        "SELECT id FROM users WHERE id = $1",
-        verify.user_id.unwrap()
-    )
-    .fetch_optional(&pool.pool)
-    .await;
+    let check_user = find_user_by_id(&pool.pool, verify.user_id.unwrap()).await;
     if check_user.is_err() {
         return Json(Response {
             code: 401,
@@ -111,6 +116,22 @@ pub async fn get_files(
     })
 }
 
+/// Удаление файла
+#[utoipa::path(
+    delete,
+    path = "/files/delete",
+    params(
+        ("file_id" = i32, description = "ID удаляемого файла", example = 123)
+    ),
+    responses(
+        (status = 200, description = "Файл успешно удалён", body = FileResponse),
+        (status = 401, description = "Неавторизованный доступ"),
+        (status = 404, description = "Пользователь не найден"),
+        (status = 500, description = "Ошибка сервера")
+    ),
+    tag = "files"
+)]
+#[axum::debug_handler]
 pub async fn delete_file(
     State(pool): State<AppState>,
     headers: HeaderMap,
@@ -125,12 +146,7 @@ pub async fn delete_file(
         });
     }
 
-    let check_user = sqlx::query!(
-        "SELECT id FROM users WHERE id = $1",
-        verify.user_id.unwrap()
-    )
-    .fetch_optional(&pool.pool)
-    .await;
+    let check_user = find_user_by_id(&pool.pool, verify.user_id.unwrap()).await;
 
     if check_user.is_err() {
         return Json(Response {

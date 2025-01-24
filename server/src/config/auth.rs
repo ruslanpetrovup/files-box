@@ -3,25 +3,8 @@ use std::env;
 use bcrypt::{hash, verify};
 use jsonwebtoken::{encode, Header, EncodingKey, decode, DecodingKey, Validation, TokenData};
 use chrono::{Utc, Duration};
-use serde::{Serialize, Deserialize};
 use rand::Rng;
-
-pub struct Auth {
-    secret_key: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ResetPassword {
-    pub email: String,
-    pub code: String,
-    pub new_password: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Claims {
-    sub: i32,
-    exp: usize,
-}
+use crate::models::auth::{Auth, Claims};
 
 impl Auth {
     pub fn new() -> Auth {
